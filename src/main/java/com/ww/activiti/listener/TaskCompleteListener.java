@@ -5,7 +5,9 @@ import org.activiti.engine.delegate.event.impl.ActivitiEntityEventImpl;
 import org.activiti.engine.impl.persistence.entity.TaskEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+@Component
 public class TaskCompleteListener implements EventHandler {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());

@@ -1,15 +1,19 @@
 package com.ww.activiti.config;
 
+import com.ww.activiti.listener.GlobalEventListener;
 import org.activiti.engine.*;
+import org.activiti.engine.delegate.event.ActivitiEventListener;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.spring.ProcessEngineFactoryBean;
 import org.activiti.spring.SpringProcessEngineConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.thymeleaf.expression.Lists;
+import org.thymeleaf.expression.Maps;
 
 import javax.sql.DataSource;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * activiti工作流配置
@@ -27,12 +31,24 @@ public class Cfg_Activiti {
         processEngineConfiguration.setIdGenerator(new MyIdGenerator());
         processEngineConfiguration.setTransactionManager(transactionManager);
 
+        Map<String, List<ActivitiEventListener>> typedListeners = new HashMap<>();
+        List<ActivitiEventListener> activitiEventListener = new ArrayList<>();
+        activitiEventListener.add(monitorListener());
+        typedListeners.put("TASK_COMPLETED,TASK_ASSIGNED", activitiEventListener);
+
+        processEngineConfiguration.setTypedEventListeners(typedListeners);
         //流程图字体
         processEngineConfiguration.setActivityFontName("宋体");
         processEngineConfiguration.setAnnotationFontName("宋体");
         processEngineConfiguration.setLabelFontName("宋体");
 
         return processEngineConfiguration;
+    }
+
+
+    @Bean
+    public GlobalEventListener monitorListener(){
+        return new GlobalEventListener();
     }
 
     //流程引擎，与spring整合使用factoryBean

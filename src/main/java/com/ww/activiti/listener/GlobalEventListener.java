@@ -3,34 +3,66 @@ package com.ww.activiti.listener;
 import lombok.extern.log4j.Log4j;
 import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
+import org.activiti.engine.delegate.event.ActivitiEntityEvent;
 import org.activiti.engine.delegate.event.ActivitiEvent;
 import org.activiti.engine.delegate.event.ActivitiEventListener;
+import org.activiti.engine.delegate.event.ActivitiEventType;
+import org.activiti.engine.impl.persistence.entity.TaskEntity;
+import org.activiti.engine.task.IdentityLink;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
+@Component
 public class GlobalEventListener implements ActivitiEventListener {
 
+    protected Logger logger = LoggerFactory.getLogger(getClass());
     /**
-     * 日志处理器
+     * 各类 Event 的处理器
      */
+    private Map<ActivitiEventType, EventHandler> handlers = new HashMap<ActivitiEventType, EventHandler>();
 
-    //事件及事件的处理器
-    //private Map<String,EventHandler> handlers=new HashMap<String, EventHandler>();
-    //更换为以下模式，可以防止Spring容器启动时，ProcessEngine尚未创建，而业务类中又使用了这个引用
-    private Map<String,String> handlers=new HashMap<String, String>();
+
 
     @Override
     public void onEvent(ActivitiEvent event) {
-        String eventType=event.getType().name();
-        log.debug("envent type is ========>" + eventType);
-        //根据事件的类型ID,找到对应的事件处理器
-        String eventHandlerBeanId=handlers.get(eventType);
-//        EventHandler eventHandler = handlers.get(event.getType());
-//        if(eventHandler!=null){
-//            eventHandler.handle(event);
-//        }
+        // TODO Auto-generated method stub
+        String processInstanceId = event.getProcessInstanceId();
+        logger.debug("processInstanceId {}",processInstanceId);
+
+
+        logger.debug("事件类型 {}",event.getType());
+
+        if(event.getType().equals(ActivitiEventType.TASK_ASSIGNED)){
+            ActivitiEntityEvent entityEvent = (ActivitiEntityEvent) event;
+            TaskEntity taskEntity = (TaskEntity) entityEvent.getEntity();
+            String assignee = taskEntity.getAssignee();
+            if(StringUtils.isNotBlank(assignee)){
+                // 给assignee发信息
+                logger.debug("assignee {}",assignee);
+            }else{
+                // 如果走这里那说明人是候选人或者候选组
+                Set<IdentityLink> identityLinkList = taskEntity.getCandidates();
+                if(!identityLinkList.isEmpty()){
+                    for (IdentityLink identityLink : identityLinkList) {
+                        // 这个userid是候选用户id
+                        String userId = identityLink.getUserId();
+                        // 这个groupid是候选组
+                        String groupId = identityLink.getGroupId();
+                        logger.debug("你好啊+userId :{},groupId :{}",userId,groupId);
+                    }
+                }
+/*            	taskEntity.getIdentityLinks();
+
+            	taskEntity.getCandidates();*/
+            }
+        }
     }
 
     @Override
@@ -38,11 +70,11 @@ public class GlobalEventListener implements ActivitiEventListener {
         return false;
     }
 
-    public Map<String, String> getHandlers() {
+    public Map<ActivitiEventType, EventHandler> getHandlers() {
         return handlers;
     }
 
-    public void setHandlers(Map<String, String> handlers) {
+    public void setHandlers(Map<ActivitiEventType, EventHandler> handlers) {
         this.handlers = handlers;
     }
 
